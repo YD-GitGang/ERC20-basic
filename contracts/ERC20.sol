@@ -1,15 +1,16 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-contract ERC20 {
+import './interfaces/IERC20.sol';
+
+contract ERC20 is IERC20 {
     uint256 private _totalSupply;
     string private _name;
     string private _symbol;
     uint8 private _decimals;
     address private _owner;
     mapping(address => uint256) private _balances;
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         _name = name_;
@@ -38,6 +39,10 @@ contract ERC20 {
         return _balances[account];
     }
 
+    function allowance(address owner, address spender) external view returns(uint256){
+        return _allowances[owner][spender];
+    }
+
     function mint(address account, uint256 amount) external {
         require(msg.sender == _owner, "Only contract owner can call mint");
         require(account != address(0), "mint to the zero address is not allowed");
@@ -61,6 +66,29 @@ contract ERC20 {
         _balances[sender] = _balances[sender] - amount;
         _balances[recipient] = _balances[recipient] + amount;
         emit Transfer(sender, recipient, amount);
+        return true;
+    }
+
+    function approve(address spender, uint256 amount) external returns(bool){
+        require(spender != address(0), "approve to the zero address is not allowed");
+        address owner = msg.sender;
+        _allowances[owner][spender] = amount;
+        emit Approval (owner, spender, amount);
+        return true;
+    }
+
+    function transferFrom(address sender, address recipient, uint amount) external returns(bool){
+        require(recipient != address(0), "transfer to the zero address is not allowed");
+        require(_balances[sender] >= amount, "transfer amount cannot exceed balance");
+        _balances[sender] = _balances[sender] - amount;
+        _balances[recipient] = _balances[recipient] + amount;
+        emit Transfer(sender, recipient, amount);
+
+        address spender = msg.sender;
+        require(_allowances[sender][spender] >= amount, "insufficient allowance");
+        _allowances[sender][spender] = _allowances[sender][spender] - amount;
+        emit Approval(sender, spender, _allowances[sender][spender]);
+
         return true;
     }
 }
