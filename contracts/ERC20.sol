@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import './interfaces/IERC20.sol';
 
+
 contract ERC20 is IERC20 {
     uint256 private _totalSupply;
     string private _name;
