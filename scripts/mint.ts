@@ -54,7 +54,7 @@ async function main(network: string, contractAddress: string, accountAddress: st
     const signer = new ethers.Wallet(privateKey, provider);
     const option = await getOption(network, signer)
 
-    const contract = new ethers.Contract(contractAddress, erc20Artifact.abi, signer);
+    const contract = new ethers.Contract(contractAddress, erc20Artifact.abi, signer);  //　(※1)
     const decimals: number = await contract.decimals();
     const rawAmount: bigint = BigInt(Math.floor(amount * (10 ** decimals)));
     const tx = await contract.mint(accountAddress, rawAmount, option);
@@ -108,3 +108,10 @@ main(options.network, options.contractAddress, options.accountAddress, options.a
     console.error(error);
     process.exitCode = 1;
 });
+
+/*
+ - (※1)
+ - デプロイ時はgetContractFactory(hardhat使用)かContractFactory(素のethers)だがデプロイ済のコントラクトから関数を呼び出すときは
+ - Contract。読み取りのみなら Contract(Address, abi, provider)、書き込みを伴うなら Contract(Address, abi, signer)、読み込みの
+ - みなら秘密鍵不要だが書き込み時は必要だから。
+*/

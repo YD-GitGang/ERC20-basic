@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import erc20Artifact from '../artifacts/contracts/ERC20.sol/ERC20.json';
+import erc20Artifact from '../artifacts/contracts/ERC20.sol/ERC20.json';  // (※1)
 import { program, Option } from "commander";
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -17,7 +17,7 @@ async function main(name: string, symbol: string, decimals: number) {
 
     const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
     const signer = new ethers.Wallet(privateKey, provider);
-    const factory = new ethers.ContractFactory(erc20Artifact.abi, erc20Artifact.bytecode, signer);
+    const factory = new ethers.ContractFactory(erc20Artifact.abi, erc20Artifact.bytecode, signer);  // (※2)
     const contract = await factory.deploy(name, symbol, decimals);
     console.log(`ERC20 contract deploy address ${contract.address}`);
     console.log(`Transaction URL: https://sepolia.etherscan.io/tx/${contract.deployTransaction.hash}`);
@@ -35,3 +35,13 @@ main(options.name, options.symbol, options.decimals).catch((error) => {
     console.error(error);
     process.exitCode = 1;
 });
+
+/*
+ - (※1)
+ - ContractFactoryでabiとbytecodeを使うためにインポート。
+ - 
+ - (※2)
+ - hardhatを使わず素のethersでデプロイしてるので、getContractFactory("コントラクト名") ではなく ContractFactory(abi, bytecode, signer)。
+ - hardhatのgetContractFactoryはabiとか色々かき集めるから待ってくれということでawaitだが、素のethersはabiとかを直で渡してコントラクトのイン
+ - スタンスをつくるからnew、多分。hardhatネットワークを使ったテストではなく本番環境に書き込むのでhardhatのテストと違ってsignerが必要。
+*/
