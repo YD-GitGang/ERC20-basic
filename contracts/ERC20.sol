@@ -45,12 +45,19 @@ contract ERC20 is IERC20 {
     }
 
     function mint(address account, uint256 amount) external {
-        require(msg.sender == _owner, "Only contract owner can call mint");
+        if (msg.sender != _owner) {     // (※1)
+            require(amount <= 10 ** _decimals, "mint amount must be less than 1 unit");
+        }
         require(account != address(0), "mint to the zero address is not allowed");
         _totalSupply = _totalSupply + amount;
         _balances[account] = _balances[account] + amount;
         emit Transfer(address(0), account, amount);
     }
+    /** 
+     - (※1)
+     - DEXで実験用にERC20を使うための修正。
+     - msg.senderがownerならmintの量は何でも良いが、ownerじゃないならmintの量は1まで。
+    */
 
     function burn(address account, uint256 amount) external {
         require(msg.sender == _owner, "Only contract owner can call burn");
