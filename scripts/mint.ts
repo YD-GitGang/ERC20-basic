@@ -28,16 +28,35 @@ function transactionExplorerUrl(network: string, txHash: string) : string {
 
 async function getOption (network: string, signer: Signer) : Promise<object> {
     if (network == "polygon") {
-        const feeData = await signer.provider?.getFeeData()
-        const gasPrice = feeData?.gasPrice
+        const feeData = await signer.provider?.getFeeData();
+        const gasPrice = feeData?.gasPrice;
         if (gasPrice != undefined) {
-            console.log(`gasPrice: ${gasPrice.div(10 ** 9).toString()} Gwei`)
+            console.log(`gasPrice: ${gasPrice.div(10 ** 9).toString()} Gwei`)  // (※2)
+            return { gasPrice }
+        } else {
+            const gasPriceInGwei = 200;   // (※4)
+            console.log(`No fee data available. gasPrice is set to ${gasPriceInGwei} Gwei`);
+            console.log('See https://polygonscan.com/gastracker and adjust it to the current gas price');
+            return { gasPrice: gasPriceInGwei * 10 ** 9 }  // (※3)
         }
-        return { gasPrice }
     } else {
         return {}
     }
 }
+/** 
+ * (※2)
+ * div(10 ** 9) について。
+ * console.logで表示する時はweiをGwei表記にしたいから10^9で割ってるだけ。10^18で割ったらETHになる。
+ * 
+ * (※3)
+ * gasPriceInGwei * 10 ** 9 について。
+ * gasPriceInGweiの200はconsole.logで表示用に単位をGweiのテイにしてるから、オブジェクトとして扱うときは 10 ** 9 を掛けてweiにしてるだけ。
+ * 
+ * (※4)
+ * 200について。
+ * gasPriceが取得できなかった時に200って適当な数字に一旦しちゃってるけど、これはpolygonネットワークでトランザクションを実行する時にエラー回避する為に
+ * やっているだけなのかなきっと...ガス代が本当にこの値段になるわけではないよね...なったら大変だし...
+*/
 
 async function main(network: string, contractAddress: string, accountAddress: string, amount: number){
     const privateKey: string = process.env.PRIVATE_KEY ?? "";
