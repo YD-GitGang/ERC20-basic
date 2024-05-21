@@ -5,6 +5,42 @@ import type { Signer } from "ethers";
 import * as dotenv from "dotenv";
 dotenv.config();
 
+function getRpcUrl (network: string): string {   // (※3)
+    if (network == "polygon") {
+        return process.env.POLYGON_URL ?? "";    // (※4)
+    } else if (network == "sepolia") {
+        return process.env.SEPOLIA_URL ?? "";
+    } else {
+        return ""
+    }
+}
+/** 
+ * (※3)
+ * awaitしない理由
+ * ファイルシステムにアクセスする場合は時間がかかる。だから.envから値を取ってくるこの作業はawaitにするべきだと思ったけど、process.envを使って
+ * る場合は時間がかからないのかな、きっと。
+ * 
+ * (※4)
+ * 「?? ""」と記述する理由
+ * .envファイルにURLが正しく記載されてるとは限らない。その不確定な状態でprocess.env.POLYGON_URLとしてもし.envファイルにPOLYGON_URLがなか
+ * ったら、返り値が string じゃなくて undefined になっちゃうよとVSCodeがエラーをだす。というのも返り値を string と厳しく設定しているから。
+ * だから.envファイルから想定してるものが取れなくても警告を出されないように「?? ""」と書いたわけだ。
+*/
+
+function transactionExplorerUrl(network: string, txHash: string): string {
+    if (network == "polygon") {
+        return `https://polygonscan.com/tx/${txHash}`
+    } else if (network == "sepolia") {
+        return `https://sepolia.etherscan.io/tx/${txHash}`
+    } else {
+        return ""    // (※5)
+    }
+}
+/** 
+ * (※5)
+ * (※6)の .choices(['polygon', 'sepolia']) で二択に絞ってるから(※5)いらないよな...
+*/
+
 async function getOption (network: string, signer: Signer) : Promise<object> {
     if (network == "polygon") {
         const feeData = await signer.provider?.getFeeData();
@@ -29,9 +65,9 @@ async function main(network: string, name: string, symbol: string, decimals: num
         throw new Error('No value set for environement variable PRIVATE_KEY');
     }
 
-    const rpcUrl: string = process.env.SEPOLIA_URL ?? "";
+    const rpcUrl: string = getRpcUrl(network);
     if (rpcUrl === "") {
-        throw new Error('No value set for environement variable SEPOLIA_URL');
+        throw new Error('No value set for environement variable of network URL');
     }
 
     const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
@@ -42,14 +78,14 @@ async function main(network: string, name: string, symbol: string, decimals: num
     const factory = new ethers.ContractFactory(erc20Artifact.abi, erc20Artifact.bytecode, signer);  // (※2)
     const contract = await factory.deploy(name, symbol, decimals, option);
     console.log(`ERC20 contract deploy address ${contract.address}`);
-    console.log(`Transaction URL: https://sepolia.etherscan.io/tx/${contract.deployTransaction.hash}`);
+    console.log(`Transaction URL: ${transactionExplorerUrl(network, contract.deployTransaction.hash)}`);
     await contract.deployed();
     console.log(`Deploy completed`)
     console.log(JSON.stringify({chainId, address: contract.address, symbol, name, decimals, logo: ""}))
 }
 
 program
-    .addOption(new Option('--network <string>', 'name of blockchain network(e.g. polygon, sepolia)').choices(['polygon', 'sepolia']).makeOptionMandatory())
+    .addOption(new Option('--network <string>', 'name of blockchain network(e.g. polygon, sepolia)').choices(['polygon', 'sepolia']).makeOptionMandatory()) //(※6)
     .addOption(new Option('--name <string>', 'name of token (e.g. bitcoin)').makeOptionMandatory())
     .addOption(new Option('--symbol <string>', 'symbol of token (e.g. BTC)').makeOptionMandatory())
     .addOption(new Option('--decimals <number>', 'decimals of token (e.g. 18)').argParser(parseInt).makeOptionMandatory()).parse()

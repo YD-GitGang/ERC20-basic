@@ -66,7 +66,7 @@ async function main(network: string, contractAddress: string, accountAddress: st
 
     const rpcUrl: string = getRpcURL(network);
     if (rpcUrl === "") {
-        throw new Error('No value set for environement variable SEPOLIA_URL');
+        throw new Error('No value set for environement variable of network URL');
     }
 
     const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
